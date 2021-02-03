@@ -3,7 +3,7 @@ import cv2 as cv
 import numpy as np
 import os
 
-def distance():
+def distance(v1,v2):
     #Euclidian 
     return np.sqrt(((v1-v2)**2).sum())
 
@@ -13,7 +13,7 @@ def knn(train, test, k =5):
     for i in range(train.shape[0]):
         #Get the vector and label 
         ix = train[i, :-1]
-        iy = train[i, :-1]
+        iy = train[i, -1]
         # Compute the distance from the test point
         d = distance(test,ix)
         dist.append([d,iy])
@@ -50,6 +50,7 @@ names = {}   #Mapping between id-name
 
 for fx in os.listdir(dataset_path):
     if fx.endswith('.npy'):
+        names[class_id] = fx[:-4] #Create a mapping between class_id and name
         print("Loaded"+ fx)
         data_item = np.load(dataset_path+fx)
         face_data.append(data_item)
@@ -70,8 +71,37 @@ print(trainset.shape)
 
 #Testing
 
-    while True:
-        isTrue, frame = capture.read()
+while True:
+    isTrue, frame = capture.read()
+
+    faces = face_cascade.detectMultiScale(frame,1.3,2)
+
+    for (x,y,w,h) in faces:
+
+        
+        #Getting the Region of Interest
+        offset = 10
+        face_section = frame[y-offset:y+h+offset,x-offset:x+w+offset]
+        face_section = cv.resize(face_section,(100,100))
+        #####
+
+        out = knn(trainset,face_section.flatten())
+
+        #Display text on the screen and rectangle around it
+        pred_name = names[int(out)]
+        cv.putText(frame,pred_name,(x+20,y-10),cv.FONT_HERSHEY_SIMPLEX,1,(255,0,0),2,cv.LINE_AA )
+        cv.rectangle(frame,(x,y),(x+w,y+h),(0,255,255),2)
+
+    cv.imshow("Face Recognition", frame)
+
+    if cv.waitKey(1) & 0xFF == ord('w'):
+        break
+
+capture.release()
+cv.destroyAllWindows()
+
+
+
 
 
 
